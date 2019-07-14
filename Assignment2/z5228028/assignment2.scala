@@ -1,7 +1,9 @@
+import java.io._
+
 // Use the named values (val) below whenever your need to
 // read/write inputs and outputs in your program. 
 val inputFilePath  = "sample_input.txt"
-val outputDirPath = "output"
+val outputDirPath = "output.csv"
 
 // Write your solution here
 
@@ -41,7 +43,13 @@ case class Stats(var total: Int, var min: Int, var max: Int, var count: Int, var
 val result  = bytes_pairs.mapValues(f=>Stats(f,f,f,1,List(f))).reduceByKey(_ agg _)
 
 // Generate final output
-val final_result  = result.map(x=>x._1+","+x._2.gen_output)
+val final_result  = result.map(x=>x._1+","+x._2.gen_output).collect()
 
 // Write to File
-final_result.saveAsTextFile(outputDirPath)
+val output_file = new File(outputDirPath)
+
+val bw = new BufferedWriter(new FileWriter(output_file))
+
+final_result.foreach(line => bw.write(line + "\n"))
+
+bw.close()
