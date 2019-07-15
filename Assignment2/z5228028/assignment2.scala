@@ -1,9 +1,7 @@
-import java.io._
-
 // Use the named values (val) below whenever your need to
 // read/write inputs and outputs in your program. 
 val inputFilePath  = "sample_input.txt"
-val outputDirPath = "output.csv"
+val outputDirPath = "output"
 
 // Write your solution here
 
@@ -12,7 +10,7 @@ val MB_to_B = 1048576
 val KB_to_B = 1024
 
 // create an RDD from input file
-val file = sc.textFile(inputFilePath,1)
+val file = sc.textFile(inputFilePath)
 
 // split each line by comma(,)
 val lines = file.map(_.split(","))
@@ -42,14 +40,8 @@ case class Stats(var total: Int, var min: Int, var max: Int, var count: Int, var
 // Map size of payload to Stats Object and Reduce with aggregation function in case class
 val result  = bytes_pairs.mapValues(f=>Stats(f,f,f,1,List(f))).reduceByKey(_ agg _)
 
-// Generate final output
-val final_result  = result.map(x=>x._1+","+x._2.gen_output).collect()
+// Generate final output and return new RDD with exactly one partition
+val final_result  = result.map(x=>x._1+","+x._2.gen_output).repartition(1)
 
 // Write to File
-val output_file = new File(outputDirPath)
-
-val bw = new BufferedWriter(new FileWriter(output_file))
-
-final_result.foreach(line => bw.write(line + "\n"))
-
-bw.close()
+final_result.saveAsTextFile(outputDirPath)

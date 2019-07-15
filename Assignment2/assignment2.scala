@@ -10,7 +10,7 @@ val MB_to_B = 1048576
 val KB_to_B = 1024
 
 // create an RDD from input file
-val file = sc.textFile(inputFilePath,1)
+val file = sc.textFile(inputFilePath)
 
 // split each line by comma(,)
 val lines = file.map(_.split(","))
@@ -40,8 +40,8 @@ case class Stats(var total: Int, var min: Int, var max: Int, var count: Int, var
 // Map size of payload to Stats Object and Reduce with aggregation function in case class
 val result  = bytes_pairs.mapValues(f=>Stats(f,f,f,1,List(f))).reduceByKey(_ agg _)
 
-// Generate final output
-val final_result  = result.map(x=>x._1+","+x._2.gen_output)
+// Generate final output and return new RDD with exactly one partition
+val final_result  = result.map(x=>x._1+","+x._2.gen_output).repartition(1)
 
 // Write to File
 final_result.saveAsTextFile(outputDirPath)
