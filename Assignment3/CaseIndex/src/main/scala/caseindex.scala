@@ -50,17 +50,22 @@ object CaseIndex {
             val organizations : Set[String] = Set()
             val general_terms : Set[String] = Set()
         
-
-            // pass all sentences to Named Entity Recognition API
-            val NLP_result = Http("""http://localhost:9000/?properties=%7B'annotators':'ner','ner.applyFineGrained':'false','outputFormat':'json'%7D""").postData(sentence_list.mkString(" ")).method("POST").header("Content-Type", "application/json").option(HttpOptions.readTimeout(60000)).asString.body
+           
+            // process each sentence
+            
+                
+            
+            
+            var NLP_result = Http("""http://localhost:9000/?properties=%7B'annotators':'ner','ner.applyFineGrained':'false','outputFormat':'json'%7D""").postData(sentence_list.mkString(" ")).method("POST").header("Content-Type", "application/json").option(HttpOptions.readTimeout(60000)).asString.body
+            
             // parse reponse to JSON object
             val NLP_json: JsValue = Json.parse(NLP_result)
             
             // get all entities
-            val entitymentions = NLP_json \\ "entitymentions"
-            entitymentions.foreach(entitymention=>{
-                val text = entitymention \\ "text"
-                val ner = entitymention \\ "ner"
+            val tokens = NLP_json \\ "tokens"
+            tokens.foreach(token=>{
+                val text = token \\ "word"
+                val ner = token \\ "ner"
             
                 var idx = 0
                 for(idx <- 0 until text.length){
@@ -74,8 +79,8 @@ object CaseIndex {
                 }
                 
             })
-                
-    
+          
+            // pass all sentences to Named Entity Recognition API
             
             // convert to list
             val people_list = "[" + people.toList.mkString(",")+"]"
