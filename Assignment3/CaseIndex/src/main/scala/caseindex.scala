@@ -12,9 +12,9 @@ object CaseIndex {
     def main(args: Array[String]) {
         
         // create an index
-        val index_response = Http("http://localhost:9200/legal_idx").method("PUT").header("Content-Type", "application/json").option(HttpOptions.readTimeout(10000)).asString
+        val index_response = Http("http://localhost:9200/legal_idx").method("PUT").header("Content-Type", "application/json").option(HttpOptions.connTimeout(10000)).option(HttpOptions.readTimeout(10000)).asString
         // create a new mapping
-        val mapping_response = Http("http://localhost:9200/legal_idx/cases/_mapping?pretty").postData("""{"cases":{"properties":{"id":{"type":"text"},"name":{"type":"text"},"url":{"type":"text"},"catchphrase":{"type":"text"},"sentence":{"type":"text"},"person":{"type":"text"},"location":{"type":"text"},"organization":{"type":"text"}}}}""").method("PUT").header("Content-Type", "application/json").option(HttpOptions.readTimeout(10000)).asString
+        val mapping_response = Http("http://localhost:9200/legal_idx/cases/_mapping?pretty").postData("""{"cases":{"properties":{"id":{"type":"text"},"name":{"type":"text"},"url":{"type":"text"},"catchphrase":{"type":"text"},"sentence":{"type":"text"},"person":{"type":"text"},"location":{"type":"text"},"organization":{"type":"text"}}}}""").method("PUT").header("Content-Type", "application/json").option(HttpOptions.connTimeout(10000)).option(HttpOptions.readTimeout(10000)).asString
     
         // get input path from argument
         val inputFile = args(0)
@@ -54,31 +54,32 @@ object CaseIndex {
             // process each sentence
             
                 
+            sentence_list.foreach(e_sentence=>{
+                var NLP_result = Http("""http://localhost:9000/?properties=%7B'annotators':'ner','outputFormat':'json'%7D""").postData(e_sentence).method("POST").header("Content-Type", "application/json").option(HttpOptions.connTimeout(60000)).option(HttpOptions.readTimeout(60000)).asString.body
             
-            
-            var NLP_result = Http("""http://localhost:9000/?properties=%7B'annotators':'ner','ner.applyFineGrained':'false','outputFormat':'json'%7D""").postData(sentence_list.mkString(" ")).method("POST").header("Content-Type", "application/json").option(HttpOptions.readTimeout(60000)).asString.body
-            
-            // parse reponse to JSON object
-            val NLP_json: JsValue = Json.parse(NLP_result)
-            
-            // get all entities
-            val tokens = NLP_json \\ "tokens"
-            tokens.foreach(token=>{
-                val text = token \\ "word"
-                val ner = token \\ "ner"
-            
-                var idx = 0
-                for(idx <- 0 until text.length){
-                    if(ner(idx).toString == "\"PERSON\""){
-                        people += text(idx).toString
-                    } else if(ner(idx).toString == "\"LOCATION\""){
-                        locations += text(idx).toString
-                    } else if(ner(idx).toString == "\"ORGANIZATION\""){
-                        organizations += text(idx).toString
-                    }
-                }
+                // parse reponse to JSON object
+                val NLP_json: JsValue = Json.parse(NLP_result)
                 
+                // get all entities
+                val tokens = NLP_json \\ "tokens"
+                tokens.foreach(token=>{
+                    val text = token \\ "word"
+                    val ner = token \\ "ner"
+
+                    var idx = 0
+                    for(idx <- 0 until text.length){
+                        if(ner(idx).toString == "\"PERSON\""){
+                            people += text(idx).toString
+                        } else if(ner(idx).toString == "\"LOCATION\""){
+                            locations += text(idx).toString
+                        } else if(ner(idx).toString == "\"ORGANIZATION\""){
+                            organizations += text(idx).toString
+                        }
+                    }   
+                })
             })
+            
+            
           
             // pass all sentences to Named Entity Recognition API
             
